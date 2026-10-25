@@ -134,6 +134,7 @@ Aturan keamanan konfigurasi:
 | `npm run build` | Build asset produksi |
 | `php artisan reconcile:stock` | Rekonsiliasi `on_hand` dengan ledger mutasi |
 | `php artisan reconcile:cash` | Rekonsiliasi kas per shift |
+| `php artisan idempotency:expire` | Menghapus kunci idempotensi yang sudah kedaluwarsa |
 | `php artisan schedule:list` | Melihat daftar job terjadwal |
 
 Sebelum membuka pull request, jalankan minimal:
@@ -163,24 +164,32 @@ Kriteria penerimaan lengkap (AC-01 sampai AC-20) dan skenario wajib ada di spesi
 
 ---
 
-## Struktur Proyek
+## Struktur Proyek Saat Ini
 
 ```text
 app/
-├── Domain/        Enum status, konstanta izin, kode alasan
-├── Services/      Seluruh operasi tulis bisnis (satu-satunya tempat yang mengubah stok, kas, dan status)
-├── Support/       Money, AccessControl, kode error
-├── Filament/      Panel staf: resource, halaman (termasuk POS), widget
-├── Livewire/      Komponen interaktif portal dan POS
-├── Http/          Controller, middleware keamanan dan sesi
-└── Console/       Perintah artisan operasional
+├── Domain/                 Enum status, konstanta izin, dan kode alasan
+├── Services/
+│   ├── Clinic/             AppointmentService, MedicalRecordService
+│   ├── Inventory/          ProductCatalogService, InventoryAdjustmentService, InventoryTransferService
+│   ├── Pos/                CashShiftService, PosSalesService
+│   ├── Purchasing/         PurchaseReceivingService
+│   └── Shared/             Transactions, IdempotencyGuard, DocumentNumberService, StockWriteGuard, AuditLogger, CustomerPetService
+├── Support/                Money, AccessControl
+├── Http/Controllers/        HealthCheckController
+├── Console/Commands/        ExpireIdempotencyKeys
+└── Models/                  Model untuk modul yang sudah dimulai
 database/
-├── migrations/    Skema dan trigger (tidak diedit setelah merge)
-└── seeders/       Izin, metode pembayaran, data demo sintetis
-resources/views/   Blade untuk portal dan cetak
-tests/             Unit, Feature, Isolation, Concurrency, Browser
-docs/              Spesifikasi, permissions, deployment, runbook
+├── migrations/              Skema dan constraint modul yang sudah dimulai
+└── seeders/                 PermissionSeeder, PaymentMethodSeeder
+resources/views/             View Laravel
+tests/
+├── Unit/
+└── Feature/
+docs/                         Spesifikasi dan dokumentasi proyek
 ```
+
+Panel Filament, komponen Livewire, middleware keamanan, dan command operasional lainnya belum diimplementasikan. Folder Online, Hospitalization, Grooming, Billing, dan Finance dibuat saat modulnya dimulai.
 
 Aturan arsitektur utama:
 
