@@ -36,6 +36,11 @@ final readonly class Money
         return new self($this->amount->multipliedBy($factor));
     }
 
+    public function dividedBy(string|int|BigDecimal $divisor, int $scale = 2): self
+    {
+        return new self($this->amount->dividedBy($divisor, $scale, RoundingMode::HALF_UP));
+    }
+
     public function percentageOf(string|int|BigDecimal $percentage, int $scale = 2): self
     {
         return new self(
@@ -48,6 +53,56 @@ final readonly class Money
     public function roundedToRupiah(): self
     {
         return new self($this->amount->toScale(0, RoundingMode::HALF_UP));
+    }
+
+    public function toScale(int $scale, RoundingMode $roundingMode = RoundingMode::HALF_UP): self
+    {
+        return new self($this->amount->toScale($scale, $roundingMode));
+    }
+
+    public function compareTo(self $other): int
+    {
+        return $this->amount->compareTo($other->amount);
+    }
+
+    public function equals(self $other): bool
+    {
+        return $this->compareTo($other) === 0;
+    }
+
+    public function isPositive(): bool
+    {
+        return $this->amount->isPositive();
+    }
+
+    public function isNegative(): bool
+    {
+        return $this->amount->isNegative();
+    }
+
+    public function isZero(): bool
+    {
+        return $this->amount->isZero();
+    }
+
+    public function greaterThan(self $other): bool
+    {
+        return $this->compareTo($other) > 0;
+    }
+
+    public function greaterThanOrEqual(self $other): bool
+    {
+        return $this->compareTo($other) >= 0;
+    }
+
+    public function lessThan(self $other): bool
+    {
+        return $this->compareTo($other) < 0;
+    }
+
+    public function lessThanOrEqual(self $other): bool
+    {
+        return $this->compareTo($other) <= 0;
     }
 
     public function toDatabaseString(): string

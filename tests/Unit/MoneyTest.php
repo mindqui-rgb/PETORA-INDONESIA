@@ -21,3 +21,15 @@ it('stores monetary values with two decimal places', function () {
 it('calculates percentages without floating point arithmetic', function () {
     expect(Money::of('99.99')->percentageOf('10')->toDatabaseString())->toBe('10.00');
 });
+
+it('supports comparisons and scale-based division for monetary math', function () {
+    $base = Money::of('2500');
+    $other = Money::of('2500.00');
+    $half = Money::of('10')->dividedBy('4', 2);
+
+    expect($base->equals($other))
+        ->toBeTrue()
+        ->and($base->greaterThan(Money::of('2499.99')))->toBeTrue()
+        ->and($base->isPositive())->toBeTrue()
+        ->and($half->toDatabaseString())->toBe('2.50');
+});

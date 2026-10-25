@@ -6,6 +6,7 @@ namespace App\Services\Pos;
 
 use App\Domain\Permission;
 use App\Domain\ProductUnitType;
+use App\Domain\Role;
 use App\Models\CashShift;
 use App\Models\InventoryLocation;
 use App\Models\InventoryLot;
@@ -80,7 +81,7 @@ final class PosSalesService
 
     public function addItem(User $actor, string $saleId, string $productId, string $quantity): Sale
     {
-        $sale = $this->findSale($saleId);
+        $sale = $this->findSale($saleId, $actor);
         $this->authorize($actor, $sale->branch_id);
         $amount = BigDecimal::of($quantity);
 
@@ -152,7 +153,7 @@ final class PosSalesService
         ?string $ownerPassword = null,
         ?string $overrideReason = null,
     ): Sale {
-        $sale = $this->findSale($saleId);
+        $sale = $this->findSale($saleId, $actor);
         $this->authorize($actor, $sale->branch_id);
 
         if (! $this->accessControl->can($actor, Permission::PosDiscountApply, $sale->branch_id)) {
@@ -242,7 +243,7 @@ final class PosSalesService
     /** @param list<array{method_code: string, amount: string, tendered_amount?: string}> $payments */
     public function complete(User $actor, string $saleId, array $payments, string $idempotencyKey): Sale
     {
-        $sale = $this->findSale($saleId);
+        $sale = $this->findSale($saleId, $actor);
         $this->authorize($actor, $sale->branch_id);
 
         if (trim($idempotencyKey) === '' || strlen($idempotencyKey) > 128) {
@@ -625,12 +626,22 @@ final class PosSalesService
         return $value->toScale(2, RoundingMode::UNNECESSARY);
     }
 
-    private function findSale(string $saleId): Sale
+    private function findSale(string $saleId, ?User $actor = null): Sale
     {
         $sale = Sale::query()->find($saleId);
 
         if ($sale === null) {
             throw (new ModelNotFoundException)->setModel(Sale::class, [$saleId]);
+        }
+
+        if ($actor !== null) {
+            $branchId = (string) $sale->branch_id;
+            if ($actor->role !== Role::Owner && ! DB::table('user_branch_access')
+                ->where('user_id', $actor->getKey())
+                ->where('branch_id', $branchId)
+                ->exists()) {
+                throw (new ModelNotFoundException)->setModel(Sale::class, [$saleId]);
+            }
         }
 
         return $sale;
